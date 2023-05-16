@@ -26,7 +26,7 @@ def parse_pdf() -> Tuple[List, List]:
             # Tax-0.59
             #
             # 2022-03-01 ENB (CA29250N1050) Cash Dividend USD 0.675993 - CA Tax -1.42
-            match = re.findall(rf"(?P<year>\d+)-(?P<month>\d+)-(?P<day>\d+).+(?:US|CA)\n* *Tax *(?P<taxv>-*\d+\.\d+)", text)
+            match = re.findall(rf"(?P<year>\d+)-(?P<month>\d+)-(?P<day>\d+).+(?:US|CA)\n* *Tax *(?P<tax>-*\d+\.\d+)", text)
             if not match and args.verbose:
                 print(f"tax regex error on page {i}")
             tax += match
@@ -40,7 +40,7 @@ def parse_pdf() -> Tuple[List, List]:
             #
             # 2022-08-30ETD(US2976021046) Cash Dividend USD 0.50 per Share
             # (Bonus Dividend)24.00
-            match = re.findall(rf"(?P<year>\d+)-(?P<month>\d+)-(?P<day>\d+).+\n*\((?:Ordinary|Limited|Bonus)\n* *(?:Dividend|Partnership)\)(?P<divv>-*\d+\.\d+)", text)
+            match = re.findall(rf"(?P<year>\d+)-(?P<month>\d+)-(?P<day>\d+).+\n*\((?:Ordinary|Limited|Bonus)\n* *(?:Dividend|Partnership)\)(?P<div>-*\d+\.\d+)", text)
             if not match and args.verbose:
                 print(f"div regex error on page {i}")
             div += match
@@ -48,19 +48,19 @@ def parse_pdf() -> Tuple[List, List]:
 
 
 def filter_by_year(data_raw: List) -> List:
-    data_filtered = [x for x in data_raw if int(x[0]) == args.year[0]]
+    data_filtered = [data for data in data_raw if int(data[0]) == args.year[0]]
     return data_filtered
 
 
 def calc_totals(data_raw: List) -> Dict:
     totals = {"usd": 0.0, "huf": 0.0}
 
-    for t in data_raw:
-        year = int(t[0])
-        month = int(t[1])
-        day = int(t[2])
-        usdv = float(t[3])
-        totals["usd"] += usdv
+    for data in data_raw:
+        year = int(data[0])
+        month = int(data[1])
+        day = int(data[2])
+        usd = float(data[3])
+        totals["usd"] += usd
         exchange_rate = []
         while not exchange_rate:
             exchange_rate = client.get_exchange_rates(datetime.date(year, month, day), datetime.date(year, month, day), ["USD"])
@@ -69,7 +69,7 @@ def calc_totals(data_raw: List) -> Dict:
                     print(f"exchange rate error - {year}-{month}-{day}, trying again with - {year}-{month}-{day + 1}")
                 day += 1
         uds2huf_rate = exchange_rate[0].rates[0].rate
-        totals["huf"] += usdv * uds2huf_rate
+        totals["huf"] += usd * uds2huf_rate
         time.sleep(0.1)
     return totals
 
@@ -90,12 +90,12 @@ if __name__ == "__main__":
     tax = filter_by_year(tax)
     div = filter_by_year(div)
     print("Calculating tax totals...")
-    totals_tax = calc_totals(tax)
-    print(f"tax [USD]: {totals_tax['usd']}")
-    print(f"tax [HUF]: {totals_tax['huf']}")
+    totals = calc_totals(tax)
+    print(f"tax [USD]: {totals['usd']}")
+    print(f"tax [HUF]: {totals['huf']}")
     print(f"# of tax transactions: {len(tax)}")
     print("Calculating div totals...")
-    totals_div = calc_totals(div)
-    print(f"div [USD]: {totals_div['usd']}")
-    print(f"div [HUF]: {totals_div['huf']}")
+    totals = calc_totals(div)
+    print(f"div [USD]: {totals['usd']}")
+    print(f"div [HUF]: {totals['huf']}")
     print(f"# of div transactions: {len(div)}")
