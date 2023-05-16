@@ -44,11 +44,12 @@ def calc_totals(raw_data):
         day = int(t[2])
         usdv = float(t[3])
         totals["usd"] += usdv
-        exchange_rate = client.get_exchange_rates(datetime.date(year, month, day), datetime.date(year, month, day), ["USD"])
-        if not exchange_rate:
-            print(f"exchange rate error - {year}-{month}-{day}, trying again with - {year}-{month}-{day+1}")
-            day += 1
-        exchange_rate = client.get_exchange_rates(datetime.date(year, month, day), datetime.date(year, month, day), ["USD"])
+        exchange_rate = []
+        while not exchange_rate:
+            exchange_rate = client.get_exchange_rates(datetime.date(year, month, day), datetime.date(year, month, day), ["USD"])
+            if not exchange_rate:
+                print(f"exchange rate error - {year}-{month}-{day}, trying again with - {year}-{month}-{day + 1}")
+                day += 1
         uds2huf_rate = exchange_rate[0].rates[0].rate
         totals["huf"] += usdv * uds2huf_rate
         time.sleep(0.1)
