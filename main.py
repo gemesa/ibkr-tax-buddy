@@ -14,19 +14,35 @@ def parse_pdf():
         reader = PyPDF2.PdfReader(f)
 
         for i in range(args.pages[0], args.pages[-1]):
-
             page = reader.pages[i]
 
             text = page.extract_text()
-            tax_match = re.findall(rf"(?P<year>\d+)-(?P<month>\d+)-(?P<day>\d+).+(?:US|CA)\n* *Tax *(?P<taxv>-*\d+\.\d+)", text)
-            if not tax_match and args.verbose:
-                print(f"tax regex error on page {i}")
-            tax += tax_match
 
-            div_match = re.findall(rf"(?P<year>\d+)-(?P<month>\d+)-(?P<day>\d+).+\n*\((?:Ordinary|Limited|Bonus)\n* *(?:Dividend|Partnership)\)(?P<divv>-*\d+\.\d+)", text)
-            if not div_match and args.verbose:
+            # regex has to match the following:
+            # 2022-01-14 NFG(US6361801011) Cash Dividend USD 0.455 per Share - US Tax -0.34
+            #
+            # 2022-01-18CAH(US14149Y1082) Cash Dividend USD 0.4908 per Share - US
+            # Tax-0.59
+            #
+            # 2022-03-01 ENB (CA29250N1050) Cash Dividend USD 0.675993 - CA Tax -1.42
+            match = re.findall(rf"(?P<year>\d+)-(?P<month>\d+)-(?P<day>\d+).+(?:US|CA)\n* *Tax *(?P<taxv>-*\d+\.\d+)", text)
+            if not match and args.verbose:
+                print(f"tax regex error on page {i}")
+            tax += match
+
+            # # regex has to match the following:
+            # 2022-03-15ED(US2091151041) Cash Dividend USD 0.79 per Share
+            # (Ordinary Dividend)6.32
+            #
+            # 2022-05-13MMP(US5590801065) Cash Dividend USD 1.0375 per Share
+            # (Limited Partnership)9.34
+            #
+            # 2022-08-30ETD(US2976021046) Cash Dividend USD 0.50 per Share
+            # (Bonus Dividend)24.00
+            match = re.findall(rf"(?P<year>\d+)-(?P<month>\d+)-(?P<day>\d+).+\n*\((?:Ordinary|Limited|Bonus)\n* *(?:Dividend|Partnership)\)(?P<divv>-*\d+\.\d+)", text)
+            if not match and args.verbose:
                 print(f"div regex error on page {i}")
-            div += div_match
+            div += match
     return tax, div
 
 
