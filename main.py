@@ -3,7 +3,6 @@ import datetime
 import mnb
 import PyPDF2
 import re
-import time
 from typing import Dict, List, Tuple
 
 
