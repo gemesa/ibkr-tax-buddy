@@ -65,6 +65,10 @@ def fetch_exchange_rates(data_raw: List, base: str) -> Dict:
         month = int(data[1])
         day = int(data[2])
 
+        # continue if the exchange rate for the day is stored already in the db
+        if f"{year}-{month}-{day}" in exchange_rate_db:
+            continue
+
         exchange_rate = []
         day_counter = 0
         while not exchange_rate:
